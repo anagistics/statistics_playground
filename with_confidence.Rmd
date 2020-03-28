@@ -1,0 +1,131 @@
+---
+title: "With Confidence"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup}
+library(purrr)
+library(ggplot2)
+library(tibble)
+library(tidyr)
+library(magrittr)
+```
+
+
+# Introduction
+
+This workbook shall cover the topic of confidence intervals as used in statistics, in particular regression. By following the code and explanations, the reader shall be able to understand the idea of confidence intervals (for model parameters) and their meaning for predictive models.
+
+## Outline
+
+We first create the *ground truth*, i.e. some we design a well defined linear relationship between a predictor variable and a result variable. This relationship shall then be rediscovered by a linear regression model that is developed afterwards. To this end, we simulate a large sample of value pairs by adding some random noise of defined magnitude to values drawn from the above mentioned true linear functional relationship.
+
+# The true relationship
+
+The following function models the (in reality unknown) true relationship between variables `x` (independent) and `y` (dependent, result):
+```{r true_relation}
+beta_0 = 10
+beta_1 = 2
+
+y <- function(x) beta_0 + beta_1 * x
+
+```
+
+# Simulated measurements
+Before we start with our experiments, we make our analysis reproducible by setting the random seed value.
+```{r}
+set.seed(123456)
+```
+
+
+Now we assume that we take a certain amount of measurements 
+```{r}
+n_measurements <- 1000
+
+```
+and that these measurements are not exact but there is some random error. This error is assumed to follow a normal distribution with mean 0 and constant variance. 
+```{r}
+mean_error <- 0
+var_error <- 5
+
+error <- rnorm(n = n_measurements, mean = mean_error, sd = sqrt(var_error))
+```
+The independent values are taken from the range 0 to 100.
+```{r}
+range_x <- c(0, 100)
+
+x <- runif(n = n_measurements, min = range_x[1], max = range_x[2])
+```
+We then get a list of simulated measurements:
+```{r}
+measurements <- y(x) + error
+```
+
+# Statistical analysis
+Now we simulate the process of statistical analysis, i.e. we imagine an observer who has access to a subset of all measurements, e.g. because he or she records measurements over a limited time period (an *experiment*).
+
+We start simple and assume one experiment:
+```{r}
+
+pick_sample <- function(msrmnt, xval, n) {
+  picks <- sample(1:length(msrmnt), size = n)
+  x_obs <- xval[picks]
+  y_obs <- msrmnt[picks]
+  
+  list(X = x_obs, Y = y_obs)
+}
+
+experiment <- partial(pick_sample, msrmnt = measurements, xval = x)
+
+n_obs <- 50
+
+trial <- experiment(n_obs)
+
+x_obs <- trial$X
+y_obs <- trial$Y
+```
+
+## Linear model of a single experiment
+We can now compute a linear model of this single experiment The linear model uses a *least squares* algorithm to compute estimates of the intercept \beta_0 and the coefficient \beta_1:
+
+```{r}
+linmod <- lm(y_obs ~ x_obs)
+summary(linmod)
+```
+### Plot of measurements and model predictions
+```{r}
+pf <- tibble(X_OBS = x_obs, Y_OBS = y_obs, Y_FITTED = linmod$fitted.values)
+
+pf %>% ggplot(aes(x = X_OBS)) + geom_point(aes(y = Y_OBS)) + geom_line(aes(y = Y_FITTED)) +
+                labs(title = "Model plot", x = "x", y = "y")
+
+```
+## Models of several experiments
+
+```{r}
+values_per_exp <- 50
+num_of_experiments <- 5
+
+exps <- rep(values_per_exp, num_of_experiments)
+
+some_exps <- lapply(exps, experiment)
+
+some_models <- some_exps %>% map(~ lm(Y ~ X, data = .x))
+
+coeff_df <- some_models %>% map(~ .x$coefficients) %>% map_dfr(as.list)
+names(cocoeff_df) <- c("beta_0", "beta_1")
+
+
+
+
+
+
+
+
+
+
+
+```
+
