@@ -67,7 +67,7 @@ measurements <- y(x) + error
 ```
 
 # Statistical analysis
-Now we simulate the process of statistical analysis, i.e. we imagine an observer who has access to a subset of all measurements, e.g. because he or she records measurements over a limited time period (an *experiment*).
+Now we simulate the process of statistical analysis, i.e. we imagine an observer who runs a number of experiments and collects the measurements.
 
 We start simple and assume one experiment:
 ```{r}
@@ -91,7 +91,7 @@ y_obs <- trial$Y
 ```
 
 ## Linear model of a single experiment
-We can now compute a linear model of this single experiment The linear model uses a *least squares* algorithm to compute estimates of the intercept \beta_0 and the coefficient \beta_1:
+We can now compute a linear model of this single experiment The linear model uses a *least squares* algorithm to compute estimates of the intercept $\beta_0$ and the coefficient $\beta_1$:
 
 ```{r}
 linmod <- lm(y_obs ~ x_obs)
@@ -106,6 +106,7 @@ pf %>% ggplot(aes(x = X_OBS)) + geom_point(aes(y = Y_OBS)) + geom_line(aes(y = Y
   ggthemes::theme_economist_white()
 
 ```
+
 ## Models of several experiments
 
 ```{r}
@@ -128,10 +129,10 @@ names(coeff_df) <- c("beta_0", "beta_1")
 summary(coeff_df)
 ```
 ```{r}
-coeff_df %>% select(beta_1) %>% mutate(rank = percent_rank(beta_1)) %>% 
-  filter(rank >= 0.025 & rank <= 1 - 0.025) %>% 
-  mutate(MIN = min(beta_1), MAX = max(beta_1)) %>% 
-  distinct(MIN, MAX)
+alpha <- 0.05
+(q95_beta_0 <- quantile(coeff_df$beta_0, probs = c(alpha / 2, 1 - alpha / 2)))
+
+(q95_beta_1 <- quantile(coeff_df$beta_1, probs = c(alpha / 2, 1 - alpha / 2)))
 ```
 
 
@@ -142,6 +143,8 @@ coeff_df %>% select(beta_0) %>%
   ggplot(aes(x = factor(1), y = beta_0)) +
   geom_boxplot() +
   geom_jitter(width = 0.2) +
+  geom_hline(yintercept = q95_beta_0[1], colour = "red") +
+  geom_hline(yintercept = q95_beta_0[2], colour = "red") +
   labs(title = TeX("Coefficient $\\beta_0$"), x = element_blank(), y = TeX("$\\beta_0")) + 
   ggthemes::theme_economist_white()
 ```
@@ -151,18 +154,12 @@ coeff_df %>% select(beta_1) %>%
   ggplot(aes(x = factor(1), y = beta_1)) +
   geom_boxplot() +
   geom_jitter(width = 0.2) +
+  geom_hline(yintercept = q95_beta_1[1], colour = "red") +
+  geom_hline(yintercept = q95_beta_1[2], colour = "red") +
   labs(title = TeX("Coefficient $\\beta_1$"), x = element_blank(), y = TeX("$\\beta_1")) + 
   ggthemes::theme_economist_white()
 ```
 
 
 
-
-```{r}
-coeff_df %>% 
-  pivot_longer(cols = everything(), names_to = "coeff_name", values_to = "coeff_value") %>% 
-  ggplot(aes(x = coeff_name, y = coeff_value)) + geom_boxplot() +
-  ggthemes::theme_economist_white()
-
-```
 
