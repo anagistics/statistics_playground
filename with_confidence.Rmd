@@ -156,10 +156,42 @@ coeff_df %>% select(beta_1) %>%
   geom_jitter(width = 0.2) +
   geom_hline(yintercept = q95_beta_1[1], colour = "red") +
   geom_hline(yintercept = q95_beta_1[2], colour = "red") +
-  labs(title = TeX("Coefficient $\\beta_1$"), x = element_blank(), y = TeX("$\\beta_1")) + 
+  labs(title = TeX("Coefficient $\\beta_1$"), x = element_blank(), y = TeX("$\\beta_1$")) + 
   ggthemes::theme_economist_white()
 ```
 
+## The role of the size of experiments
+
+In this chapter we evaluate how the least square coefficients develop as the size of experiments increase, i.e. as the number of observations per experiment increase.
+
+```{r}
+exp_sizes <- seq(10, 200, 10)
+
+many_exps <- lapply(exp_sizes, experiment)
+many_coeffs <- many_exps %>% map(~ lm(Y ~ X, data = .x)) %>% map(~ .x$coefficients) %>% map_dfr(as.list)
+many_coeffs$EXP <- 1:length(exp_sizes)
+names(many_coeffs) <- c("experiment", "beta_0", "beta_1")
+
+```
+```{r}
+many_coeffs %>% pivot_longer(cols = c(beta_0, beta_1), names_to = "coefficient", 
+                             values_to = "value") %>%
+  ggplot(aes(x = experiment, y = value, color = coefficient)) + 
+  geom_line() +
+  scale_color_discrete(name = "Coefficient", labels = unname(c(TeX("$\\beta_0$"), TeX("$\\beta_1$")))) +
+  labs(title = "Coefficients over experiment size", x = "Experiment", y = "Coefficient value")
+```
 
 
+## The role of the replication number
+
+
+
+We run an increasing number of replications for an experiment of constant size, e.g. 100 observations.
+
+```{r}
+n_reps <- seq(5, 50, 5)
+
+# to be
+```
 
