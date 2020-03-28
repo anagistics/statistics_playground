@@ -11,6 +11,9 @@ library(ggplot2)
 library(tibble)
 library(tidyr)
 library(magrittr)
+library(ggthemes)
+library(dplyr)
+library(latex2exp)
 ```
 
 
@@ -26,8 +29,8 @@ We first create the *ground truth*, i.e. some we design a well defined linear re
 
 The following function models the (in reality unknown) true relationship between variables `x` (independent) and `y` (dependent, result):
 ```{r true_relation}
-beta_0 = 10
-beta_1 = 2
+beta_0 = 50
+beta_1 = 16
 
 y <- function(x) beta_0 + beta_1 * x
 
@@ -48,7 +51,7 @@ n_measurements <- 1000
 and that these measurements are not exact but there is some random error. This error is assumed to follow a normal distribution with mean 0 and constant variance. 
 ```{r}
 mean_error <- 0
-var_error <- 5
+var_error <- 100^2
 
 error <- rnorm(n = n_measurements, mean = mean_error, sd = sqrt(var_error))
 ```
@@ -99,14 +102,15 @@ summary(linmod)
 pf <- tibble(X_OBS = x_obs, Y_OBS = y_obs, Y_FITTED = linmod$fitted.values)
 
 pf %>% ggplot(aes(x = X_OBS)) + geom_point(aes(y = Y_OBS)) + geom_line(aes(y = Y_FITTED)) +
-                labs(title = "Model plot", x = "x", y = "y")
+                labs(title = "Model plot", x = "x", y = "y") +
+  ggthemes::theme_economist_white()
 
 ```
 ## Models of several experiments
 
 ```{r}
 values_per_exp <- 50
-num_of_experiments <- 5
+num_of_experiments <- 20
 
 exps <- rep(values_per_exp, num_of_experiments)
 
@@ -115,17 +119,50 @@ some_exps <- lapply(exps, experiment)
 some_models <- some_exps %>% map(~ lm(Y ~ X, data = .x))
 
 coeff_df <- some_models %>% map(~ .x$coefficients) %>% map_dfr(as.list)
-names(cocoeff_df) <- c("beta_0", "beta_1")
+names(coeff_df) <- c("beta_0", "beta_1")
+
+```
+
+### Descriptive statistics of the experimentally obtained coefficients
+```{r}
+summary(coeff_df)
+```
+```{r}
+coeff_df %>% select(beta_1) %>% mutate(rank = percent_rank(beta_1)) %>% 
+  filter(rank >= 0.025 & rank <= 1 - 0.025) %>% 
+  mutate(MIN = min(beta_1), MAX = max(beta_1)) %>% 
+  distinct(MIN, MAX)
+```
+
+
+### Visualization of experimental results
+
+```{r}
+coeff_df %>% select(beta_0) %>% 
+  ggplot(aes(x = factor(1), y = beta_0)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.2) +
+  labs(title = TeX("Coefficient $\\beta_0$"), x = element_blank(), y = TeX("$\\beta_0")) + 
+  ggthemes::theme_economist_white()
+```
+
+```{r}
+coeff_df %>% select(beta_1) %>% 
+  ggplot(aes(x = factor(1), y = beta_1)) +
+  geom_boxplot() +
+  geom_jitter(width = 0.2) +
+  labs(title = TeX("Coefficient $\\beta_1$"), x = element_blank(), y = TeX("$\\beta_1")) + 
+  ggthemes::theme_economist_white()
+```
 
 
 
 
-
-
-
-
-
-
+```{r}
+coeff_df %>% 
+  pivot_longer(cols = everything(), names_to = "coeff_name", values_to = "coeff_value") %>% 
+  ggplot(aes(x = coeff_name, y = coeff_value)) + geom_boxplot() +
+  ggthemes::theme_economist_white()
 
 ```
 
