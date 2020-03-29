@@ -203,7 +203,7 @@ many_coeffs %>% pivot_longer(cols = c(beta_0, beta_1), names_to = "coefficient",
                              values_to = "value") %>%
   ggplot(aes(x = experiment, y = value, color = coefficient)) + 
   geom_line() +
-  #scale_color_discrete(name = "Coefficient", labels = unname(c(TeX("$\\beta_0$"), TeX("$\\beta_1$")))) +
+  scale_color_discrete(name = "Coefficient", labels = unname(c(TeX("$\\beta_0$"), TeX("$\\beta_1$")))) +
   labs(title = "Coefficients over experiment size", x = "Experiment", y = "Coefficient value")
 ```
 
