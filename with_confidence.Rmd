@@ -97,6 +97,31 @@ We can now compute a linear model of this single experiment The linear model use
 linmod <- lm(y_obs ~ x_obs)
 summary(linmod)
 ```
+### Computing the estimate of coefficients
+
+The above estimates for the coefficients are computed like explained in the book *A Modern Approach to Regression with R*:
+
+```{r}
+(beta_1_hat <- sum((x_obs - mean(x_obs)) * (y_obs - mean(y_obs))) / sum((x_obs - mean(x_obs))**2))
+
+(beta_0_hat <- mean(y_obs) - beta_1_hat * mean(x_obs))
+
+```
+Now we compute the standard errors using the formulas in the book:
+
+```{r}
+residuals <- y_obs - (beta_0_hat + beta_1_hat * x_obs)
+sxx <- sum((x_obs - mean(x_obs))**2)
+big_s <- sqrt(1 / (length(x_obs) - 2) * sum(residuals**2))
+
+(std_error_beta_0 <- big_s * sqrt(1/length(x_obs) + (mean(x_obs))**2 / sxx))
+
+(std_error_beta_1 <- big_s / sqrt(sxx))
+```
+
+
+
+
 ### Plot of measurements and model predictions
 ```{r}
 pf <- tibble(X_OBS = x_obs, Y_OBS = y_obs, Y_FITTED = linmod$fitted.values)
@@ -165,7 +190,7 @@ coeff_df %>% select(beta_1) %>%
 In this chapter we evaluate how the least square coefficients develop as the size of experiments increase, i.e. as the number of observations per experiment increase.
 
 ```{r}
-exp_sizes <- seq(10, 200, 10)
+exp_sizes <- seq(50, 500, 50)
 
 many_exps <- lapply(exp_sizes, experiment)
 many_coeffs <- many_exps %>% map(~ lm(Y ~ X, data = .x)) %>% map(~ .x$coefficients) %>% map_dfr(as.list)
@@ -178,7 +203,7 @@ many_coeffs %>% pivot_longer(cols = c(beta_0, beta_1), names_to = "coefficient",
                              values_to = "value") %>%
   ggplot(aes(x = experiment, y = value, color = coefficient)) + 
   geom_line() +
-  scale_color_discrete(name = "Coefficient", labels = unname(c(TeX("$\\beta_0$"), TeX("$\\beta_1$")))) +
+  #scale_color_discrete(name = "Coefficient", labels = unname(c(TeX("$\\beta_0$"), TeX("$\\beta_1$")))) +
   labs(title = "Coefficients over experiment size", x = "Experiment", y = "Coefficient value")
 ```
 
@@ -190,7 +215,11 @@ many_coeffs %>% pivot_longer(cols = c(beta_0, beta_1), names_to = "coefficient",
 We run an increasing number of replications for an experiment of constant size, e.g. 100 observations.
 
 ```{r}
+n_obs <- 100
+
 n_reps <- seq(5, 50, 5)
+
+reps <- replicate(n_reps[1], experiment(n_obs), simplify = FALSE)
 
 # to be
 ```
